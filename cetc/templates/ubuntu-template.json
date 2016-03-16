@@ -1,0 +1,173 @@
+{
+  "kind": "Template",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "ubuntu-nginx",
+    "annotations": {
+      "description": "An ubuntu-nginx",
+      "tags": "instant-app,ubuntu,dockerbuild"
+    }
+  },
+  "labels": {
+    "template": "ubuntu-nginx"
+  },
+  "objects": [
+    {
+      "kind": "Service",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "ubuntu-nginx",
+        "annotations": {
+          "description": "Exposes and load balances the application pods"
+        }
+      },
+      "spec": {
+        "ports": [
+          {
+            "port": 80,
+            "targetPort": 80
+          }
+        ],
+        "selector": {
+          "name": "ubuntu-nginx"
+        }
+      }
+    },
+    {
+      "kind": "Route",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "ubuntu-nginx"
+      },
+      "spec": {
+        "host": "ubuntu-nginx-testdockerbuild.router.default.svc.cluster.local",
+        "to": {
+          "kind": "Service",
+          "name": "ubuntu-nginx"
+        }
+      }
+    },
+    {
+      "kind": "ImageStream",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "ubuntu-nginx",
+        "annotations": {
+          "description": "Keeps track of changes in the application image"
+        }
+      }
+    },
+    {
+      "kind": "BuildConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "ubuntu-nginx",
+        "annotations": {
+          "description": "Defines how to build the application"
+        }
+      },
+      "spec": {
+        "source": {
+          "type": "Git",
+          "git": {
+            "uri": "${SOURCE_REPOSITORY_URL}"
+          },
+          "contextDir": "${CONTEXT_DIR}"
+        },
+        "strategy": {
+          "type": "Docker",
+          "dockerStrategy": {
+            "from": {
+              "kind": "DockerImage",
+              "name": "registry.cetc-cloud.com:5000/ubuntu:14.04"
+            }
+          }
+        },
+        "output": {
+          "to": {
+            "kind": "ImageStreamTag",
+            "name": "ubuntu-nginx:latest"
+          }
+        },
+        "triggers": [
+          {
+            "type": "ImageChange"
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "ubuntu-nginx",
+        "annotations": {
+          "description": "Defines how to deploy the application server"
+        }
+      },
+      "spec": {
+        "strategy": {
+          "type": "Rolling"
+        },
+        "triggers": [
+          {
+            "type": "ImageChange",
+            "imageChangeParams": {
+              "automatic": true,
+              "containerNames": [
+                "ubuntu-nginx"
+              ],
+              "from": {
+                "kind": "ImageStreamTag",
+                "name": "ubuntu-nginx:latest"
+              }
+            }
+          },
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "replicas": 1,
+        "selector": {
+          "name": "ubuntu-nginx"
+        },
+        "template": {
+          "metadata": {
+            "name": "ubuntu-nginx",
+            "labels": {
+              "name": "ubuntu-nginx"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "ubuntu-nginx",
+                "image": "ubuntu-nginx",
+                "ports": [
+                  {
+                    "containerPort": 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "SOURCE_REPOSITORY_URL",
+      "description": "The URL of the repository with your application source code",
+      "value": "https://github.com/theseaofstars/ubuntu"
+    },
+    {
+      "name": "CONTEXT_DIR",
+      "description": "Set this to the relative path to your project if it is not in the root of your repository",
+      "value": "dockerfile"
+    }
+  ]
+}
