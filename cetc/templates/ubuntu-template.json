@@ -5,7 +5,7 @@
     "name": "ubuntu-nginx",
     "annotations": {
       "description": "An ubuntu-nginx",
-      "tags": "instant-app,ubuntu,dockerbuild"
+      "tags": "private-instant-app,ubuntu,dockerbuild"
     }
   },
   "labels": {
